@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Para você...</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.55), transparent 35%),
+        linear-gradient(180deg, #ffe4ee 0%, #ffd6e7 45%, #ffc7dd 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      position: relative;
+      touch-action: manipulation;
+    }
+
+    .glow {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.55), transparent 25%),
+        radial-gradient(circle at 80% 15%, rgba(255,255,255,0.35), transparent 20%),
+        radial-gradient(circle at 50% 80%, rgba(255,255,255,0.18), transparent 30%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .petals {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .petal {
+      position: absolute;
+      top: -60px;
+      width: 24px;
+      height: 34px;
+      background: linear-gradient(180deg, #ffc1d9 0%, #ff4f94 100%);
+      border-radius: 70% 0 70% 0;
+      opacity: 0.95;
+      box-shadow: 0 0 12px rgba(255, 80, 140, 0.35);
+      animation-name: fall, sway, spin;
+      animation-timing-function: linear, ease-in-out, linear;
+      animation-iteration-count: infinite, infinite, infinite;
+      z-index: 1;
+      will-change: transform;
+    }
+
+    .petal::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border-radius: 70% 0 70% 0;
+      background: rgba(255,255,255,0.22);
+    }
+
+    .stage {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .card-container {
+      width: min(92vw, 390px);
+      height: min(72svh, 520px);
+      min-height: 440px;
+      position: relative;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 30px;
+      box-shadow:
+        0 30px 70px rgba(0, 0, 0, 0.22),
+        0 18px 36px rgba(190, 70, 120, 0.22),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 28px;
+      text-align: center;
+      transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, box-shadow 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.35), transparent 45%, rgba(255,255,255,0.15));
+      pointer-events: none;
+    }
+
+    .card.hidden {
+      opacity: 0;
+      transform: scale(0.85) translateY(40px);
+      pointer-events: none;
+    }
+
+    .card.active {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      z-index: 2;
+      pointer-events: auto;
+      box-shadow:
+        0 50px 90px rgba(0, 0, 0, 0.28),
+        0 26px 50px rgba(190, 70, 120, 0.28),
+        inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    .card.exit {
+      opacity: 0;
+      transform: scale(1.08) translateY(-45px);
+      z-index: 1;
+      pointer-events: none;
+      box-shadow:
+        0 18px 30px rgba(0, 0, 0, 0.18),
+        0 10px 20px rgba(190, 70, 120, 0.18),
+        inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+
+    .text {
+      position: relative;
+      z-index: 1;
+      color: #7a1846;
+      font-size: clamp(24px, 4.6vw, 29px);
+      font-weight: 700;
+      line-height: 1.45;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    .card img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 22px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hint {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      color: #b95c84;
+      background: rgba(255,255,255,0.68);
+      padding: 8px 14px;
+      border-radius: 999px;
+      animation: pulse 2s infinite;
+      font-weight: 600;
+      z-index: 1;
+      white-space: nowrap;
+      box-shadow: 0 8px 20px rgba(185, 92, 132, 0.12);
+    }
+
+    #cover {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 999;
+      background: linear-gradient(180deg, #ffe4ee, #ffc7dd);
+      padding: 30px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.6s ease;
+    }
+
+    #cover-content {
+      max-width: 400px;
+      font-size: 26px;
+      font-weight: 700;
+      color: #7a1846;
+      line-height: 1.5;
+    }
+
+    #cover-hint {
+      margin-top: 30px;
+      font-size: 14px;
+      opacity: 0.7;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.45; transform: translateX(-50%) scale(0.98); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1); }
+    }
+
+    @keyframes fall {
+      from { transform: translateY(-70px); }
+      to { transform: translateY(110vh); }
+    }
+
+    @keyframes sway {
+      0%, 100% { margin-left: -10px; }
+      50% { margin-left: 18px; }
+    }
+
+    @keyframes spin {
+      from { rotate: 0deg; }
+      to { rotate: 360deg; }
+    }
+
+    @media (max-width: 480px) {
+      .card-container {
+        width: 94vw;
+        height: min(68svh, 500px);
+        min-height: 400px;
+      }
+
+      .card {
+        padding: 22px 18px 24px;
+        border-radius: 24px;
+      }
+
+      .text {
+        font-size: clamp(21px, 6vw, 26px);
+        line-height: 1.4;
+      }
+
+      .hint {
+        bottom: 16px;
+        font-size: 12px;
+        padding: 7px 12px;
+      }
+
+      #cover {
+        padding: 22px;
+      }
+
+      #cover-content {
+        max-width: 92vw;
+        font-size: clamp(22px, 6.4vw, 28px);
+        line-height: 1.45;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="cover" onclick="nextCard()">
+    <div id="cover-content">
+      Má, eu sei que você tá de mal comigo,<br />mas saiba que eu sempre vou ser seu maior fã nesse mundo inteiro
+      <div id="cover-hint">toca pra continuar</div>
+    </div>
+  </div>
+
+  <div class="glow"></div>
+  <div class="petals" id="petals"></div>
+
+  <div class="stage">
+    <div class="card-container" id="deck" onclick="nextCard()"></div>
+  </div>
+
+  <script>
+    const cardsData = [
+      { type: 'text', content: 'eu até pensei em mandar uma cantada pra essa foto...' },
+      { type: 'text', content: 'mas percebi que nenhuma ia chegar nem perto do que eu realmente sinto por você' },
+      { type: 'text', content: 'porque a verdade é que eu não quero só te impressionar...' },
+      { type: 'text', content: 'eu quero te conquistar todo dia, como se fosse sempre a primeira vez' },
+      { type: 'text', content: 'e no meio disso tudo, tem as nossas piadas que só a gente entende...' },
+      { type: 'text', content: 'tipo eu falar que criaria a dengue só pra ter uma desculpa pra te ver' },
+      { type: 'text', content: 'mas a verdade mesmo é bem mais simples' },
+      { type: 'text', content: 'eu sou completamente apaixonado por você' },
+      { type: 'text', content: "cause after all, you're my wonderwall..." },
+      { type: 'image', content: 'imagem.jpg' }
+    ];
+
+    let currentIndex = 0;
+    const deck = document.getElementById('deck');
+    const petals = document.getElementById('petals');
+
+    function createCard(index) {
+      const cardDiv = document.createElement('div');
+      cardDiv.className = `card ${index === 0 ? 'active' : 'hidden'}`;
+      cardDiv.id = `card-${index}`;
+
+      const item = cardsData[index];
+      const inner = item.type === 'text'
+        ? `<div class="text">${item.content}</div>`
+        : `<img src="${item.content}" alt="final" />`;
+
+      const hintHtml = index === cardsData.length - 1
+        ? ''
+        : '<div class="hint">toca na tela pra passar</div>';
+
+      cardDiv.innerHTML = `${inner}${hintHtml}`;
+      return cardDiv;
+    }
+
+    function createPetals() {
+      const petalCount = 25;
+      petals.innerHTML = '';
+
+      for (let i = 0; i < petalCount; i++) {
+        const petal = document.createElement('span');
+        petal.className = 'petal';
+        petal.style.left = `${Math.random() * 100}%`;
+
+        const fallDuration = 8 + Math.random() * 6;
+        const swayDuration = 3 + Math.random() * 2;
+        const spinDuration = 6 + Math.random() * 4;
+
+        petal.style.animationDuration = `${fallDuration}s, ${swayDuration}s, ${spinDuration}s`;
+        petal.style.animationDelay = `${Math.random() * 5}s, ${Math.random() * 2}s, ${Math.random() * 3}s`;
+        petal.style.opacity = `${0.45 + Math.random() * 0.45}`;
+        petal.style.transform = `scale(${0.7 + Math.random() * 0.9})`;
+
+        petals.appendChild(petal);
+      }
+    }
+
+    function runBasicChecks() {
+      console.assert(Array.isArray(cardsData), 'cardsData precisa ser um array');
+      console.assert(cardsData.length > 0, 'cardsData não pode estar vazio');
+      console.assert(cardsData[cardsData.length - 1].type === 'image', 'o último card deve ser a imagem final');
+      console.assert(document.getElementById('deck'), 'deck precisa existir');
+      console.assert(document.getElementById('petals'), 'petals precisa existir');
+    }
+
+    cardsData.forEach((_, i) => deck.appendChild(createCard(i)));
+    createPetals();
+    runBasicChecks();
+
+    function nextCard() {
+      const cover = document.getElementById('cover');
+
+      if (cover) {
+        cover.style.opacity = '0';
+        cover.style.pointerEvents = 'none';
+        setTimeout(() => cover.remove(), 600);
+        return;
+      }
+
+      if (currentIndex >= cardsData.length - 1) return;
+
+      const currentCard = document.getElementById(`card-${currentIndex}`);
+      const nextCardObj = document.getElementById(`card-${currentIndex + 1}`);
+
+      if (!currentCard || !nextCardObj) return;
+
+      currentCard.classList.remove('active');
+      currentCard.classList.add('exit');
+
+      nextCardObj.classList.remove('hidden');
+      nextCardObj.classList.add('active');
+
+      currentIndex++;
+    }
+  </script>
+</body>
+</html>
